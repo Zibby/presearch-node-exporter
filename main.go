@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/Jeffail/gabs/v2"
@@ -16,128 +15,68 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var client = &http.Client{Timeout: 10 * time.Second}
 var apiKey string
-
-var (
-	reg = prometheus.NewRegistry()
-
-	TotalUptimePercentage = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "total_uptime_percentage",
-			Help: "total uptime percentage",
-		},
-		[]string{"nodename"},
-	)
-
-	AverageUptimeScore = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "average_uptime_score",
-			Help: "Average uptime score",
-		},
-		[]string{"nodename"},
-	)
-
-	AverageLatencyScore = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "average_latency_score",
-			Help: "Average latency score",
-		},
-		[]string{"nodename"},
-	)
-
-	TotalUptimeSeconds = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "total_uptime_seconds",
-			Help: "Total uptime of node in seconds",
-		},
-		[]string{"nodename"},
-	)
-
-	TotalPreEarned = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "total_pre_earned",
-			Help: "Total Pre Earned",
-		},
-		[]string{"nodename"},
-	)
-
-	NumDisconnections = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "total_number_of_disconnections",
-			Help: "total number of disconnections",
-		},
-		[]string{"nodename"},
-	)
-
-	TotalRequests = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "total_number_of_requests",
-			Help: "total number of requests",
-		},
-		[]string{"nodename"},
-	)
-)
+var reg = prometheus.NewRegistry()
+var client = &http.Client{Timeout: 10 * time.Second}
 
 func initLog() {
 	log.SetOutput(os.Stdout)
 	log.SetFormatter(&log.JSONFormatter{})
 	log.Info("logger initialised")
-	apiKey = os.Args[1]
+	apiKey = os.Args[2]
 }
 
 func init() {
 	initLog()
-	reg.MustRegister(TotalUptimeSeconds)
-	reg.MustRegister(AverageLatencyScore)
-	reg.MustRegister(AverageUptimeScore)
-	reg.MustRegister(TotalUptimePercentage)
-	reg.MustRegister(TotalPreEarned)
 	reg.MustRegister(NumDisconnections)
+	reg.MustRegister(TotalUptimeSeconds)
+	reg.MustRegister(TotalUptimePercentage)
+	reg.MustRegister(AverageUptimeScore)
+	reg.MustRegister(AverageLatencyMs)
+	reg.MustRegister(AverageLatencyScore)
 	reg.MustRegister(TotalRequests)
-
+	reg.MustRegister(AverageSuccessRate)
+	reg.MustRegister(AverageSuccessRateScore)
+	reg.MustRegister(AverageReliabilityScore)
+	reg.MustRegister(AverageUtilizationPercent)
+	reg.MustRegister(TotalPreEarned)
 }
 
-func semiescapeurl(i string) string {
-	i = strings.ReplaceAll(i, "%2F", `/`)
-	i = strings.ReplaceAll(i, "%5C", `\`)
-	i = strings.ReplaceAll(i, "%2B", `+`)
-	i = strings.ReplaceAll(i, "%0D", `\n`)
-	i = strings.ReplaceAll(i, "%0A", "")
-	return i
+func childResult(metric string, c *gabs.Container) float64 {
+	return c.S("period", metric).Data().(float64)
 }
 
-func childProcessor(children []*gabs.Container, nodename string) {
-	ut, _ := children[0].S("period", "total_uptime_seconds").Data().(float64)
-	TotalUptimeSeconds.WithLabelValues(nodename).Set(ut)
+func updatePresearchMetric(metric string, c *gabs.Container, n string, g *prometheus.GaugeVec) {
+  g.WithLabelValues(n).Set(childResult(metric, c))
+}
 
-	utp, _ := children[0].S("period", "uptime_percentage").Data().(float64)
-	TotalUptimePercentage.WithLabelValues(nodename).Set(utp)
+func childProcessor(children []*gabs.Container, node string) {
+	c := children[0]
 
-	auts, _ := children[0].S("period", "avg_uptime_score").Data().(float64)
-	AverageUptimeScore.WithLabelValues(nodename).Set(auts)
+	disconnections, _ := c.S("period", "disconnections", "num_disconnections").Data().(float64)
+	NumDisconnections.WithLabelValues(node).Set(disconnections)
 
-	als, _ := children[0].S("period", "average_latency_score").Data().(float64)
-	AverageLatencyScore.WithLabelValues(nodename).Set(als)
-
-	te, _ := children[0].S("period", "total_pre_earned").Data().(float64)
-	AverageLatencyScore.WithLabelValues(nodename).Set(te)
-
-	disconnections, _ := children[0].S("period", "disconnections", "num_disconnections").Data().(float64)
-	NumDisconnections.WithLabelValues(nodename).Set(disconnections)
-
-  tr, _ := children[0].S("period", "total_requests").Data().(float64)
-	TotalRequests.WithLabelValues(nodename).Set(tr)
+	updatePresearchMetric("total_uptime_seconds", c, node, TotalUptimeSeconds)
+	updatePresearchMetric("uptime_percentage",c,node, TotalUptimePercentage)
+	updatePresearchMetric("avg_uptime_score",c,node, AverageUptimeScore)
+	updatePresearchMetric("avg_latency_ms",c,node, AverageLatencyMs)
+	updatePresearchMetric("avg_latency_score",c,node, AverageLatencyScore)
+	updatePresearchMetric("total_requests",c,node, TotalRequests)
+	updatePresearchMetric("avg_success_rate",c,node, AverageSuccessRate)
+	updatePresearchMetric("avg_success_rate_score",c,node, AverageSuccessRateScore)
+	updatePresearchMetric("avg_reliability_score",c,node, AverageReliabilityScore)
+	updatePresearchMetric("avg_utilization_percent",c,node, AverageUtilizationPercent)
+	updatePresearchMetric("avg_staked_capacity_percent",c,node, AverageStakedCapacityPercent)
+	updatePresearchMetric("total_pre_earned",c,node, TotalPreEarned)
 }
 
 func checkNodeName(children []*gabs.Container) string {
-  return children[0].S("meta", "description").Data().(string)
+	return children[0].S("meta", "description").Data().(string)
 }
 
 func presearchStatsHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	var nodepublickey string
-	nodepublickey = vars["node"]
+	nodepublickey := vars["node"]
 	resp, err := client.Get("https://nodes.presearch.org/api/nodes/status/" + apiKey + "?stats=true&start_date=2001-01-01-00%3A00&nodes=" + nodepublickey)
 	if err != nil {
 		log.Error("Failed to connect to api")
@@ -168,5 +107,5 @@ func main() {
 	r.HandleFunc("/health", healthHander)
 	r.HandleFunc("/probe/{node}", presearchStatsHandler)
 
-	log.Fatal(http.ListenAndServe(":8082", r))
+	log.Fatal(http.ListenAndServe(":"+os.Args[1], r))
 }
