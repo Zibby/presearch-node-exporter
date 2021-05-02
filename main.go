@@ -47,7 +47,7 @@ func childResult(metric string, c *gabs.Container) float64 {
 }
 
 func updatePresearchMetric(metric string, c *gabs.Container, n string, g *prometheus.GaugeVec) {
-  g.WithLabelValues(n).Set(childResult(metric, c))
+	g.WithLabelValues(n).Set(childResult(metric, c))
 }
 
 func childProcessor(children []*gabs.Container, node string) {
@@ -57,17 +57,17 @@ func childProcessor(children []*gabs.Container, node string) {
 	NumDisconnections.WithLabelValues(node).Set(disconnections)
 
 	updatePresearchMetric("total_uptime_seconds", c, node, TotalUptimeSeconds)
-	updatePresearchMetric("uptime_percentage",c,node, TotalUptimePercentage)
-	updatePresearchMetric("avg_uptime_score",c,node, AverageUptimeScore)
-	updatePresearchMetric("avg_latency_ms",c,node, AverageLatencyMs)
-	updatePresearchMetric("avg_latency_score",c,node, AverageLatencyScore)
-	updatePresearchMetric("total_requests",c,node, TotalRequests)
-	updatePresearchMetric("avg_success_rate",c,node, AverageSuccessRate)
-	updatePresearchMetric("avg_success_rate_score",c,node, AverageSuccessRateScore)
-	updatePresearchMetric("avg_reliability_score",c,node, AverageReliabilityScore)
-	updatePresearchMetric("avg_utilization_percent",c,node, AverageUtilizationPercent)
-	updatePresearchMetric("avg_staked_capacity_percent",c,node, AverageStakedCapacityPercent)
-	updatePresearchMetric("total_pre_earned",c,node, TotalPreEarned)
+	updatePresearchMetric("uptime_percentage", c, node, TotalUptimePercentage)
+	updatePresearchMetric("avg_uptime_score", c, node, AverageUptimeScore)
+	updatePresearchMetric("avg_latency_ms", c, node, AverageLatencyMs)
+	updatePresearchMetric("avg_latency_score", c, node, AverageLatencyScore)
+	updatePresearchMetric("total_requests", c, node, TotalRequests)
+	updatePresearchMetric("avg_success_rate", c, node, AverageSuccessRate)
+	updatePresearchMetric("avg_success_rate_score", c, node, AverageSuccessRateScore)
+	updatePresearchMetric("avg_reliability_score", c, node, AverageReliabilityScore)
+	updatePresearchMetric("avg_utilization_percent", c, node, AverageUtilizationPercent)
+	updatePresearchMetric("avg_staked_capacity_percent", c, node, AverageStakedCapacityPercent)
+	updatePresearchMetric("total_pre_earned", c, node, TotalPreEarned)
 }
 
 func checkNodeName(children []*gabs.Container) string {
@@ -75,8 +75,7 @@ func checkNodeName(children []*gabs.Container) string {
 }
 
 func presearchStatsHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	nodepublickey := vars["node"]
+	nodepublickey := r.FormValue("node")
 	resp, err := client.Get("https://nodes.presearch.org/api/nodes/status/" + apiKey + "?stats=true&start_date=2001-01-01-00%3A00&nodes=" + nodepublickey)
 	if err != nil {
 		log.Error("Failed to connect to api")
@@ -105,7 +104,7 @@ func main() {
 	r := mux.NewRouter()
 	r.UseEncodedPath()
 	r.HandleFunc("/health", healthHander)
-	r.HandleFunc("/probe/{node}", presearchStatsHandler)
+	r.HandleFunc("/probe", presearchStatsHandler)
 
 	log.Fatal(http.ListenAndServe(":"+os.Args[1], r))
 }

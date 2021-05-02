@@ -1,0 +1,11 @@
+[Unit]
+Description=Prometheus Presearch Node Exporter
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/local/bin/presearch-node-exporter 8082 $APIKEY
+
+[Install]
+WantedBy=multi-user.target
