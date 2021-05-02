@@ -1,10 +1,6 @@
 name: Go
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+on: push
 
 jobs:
   build:
@@ -23,5 +19,8 @@ jobs:
       - name: Create a Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            presearch-node-exporter
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
