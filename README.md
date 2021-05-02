@@ -1,10 +1,12 @@
 # presearch prometheus node exporter
 
+A prometheus exporter for presearch.io nodes written in go
+
 ## Useage
 
 ```
 ./presearch-node-exporter $PORTTOBINDTO $YOUR_PRESEARCH_APIKEY
-curl localhost:/probe/$NODE_PUBLIC_KEY # you will need to urlencode this key. eg use https://www.url-encode-decode.com/
+curl localhost:/probe?target=$NODE_PUBLIC_KEY # you will need to urlencode this key. eg use https://www.url-encode-decode.com/
 ```
 
 API key and node public keys can be found at [https://nodes.presearch.org/dashboard]()
@@ -49,3 +51,7 @@ total_uptime_percentage{nodename="Linode"} 99.59968435222578
 # TYPE total_uptime_seconds gauge
 total_uptime_seconds{nodename="Linode"} 2.145676e+06
 ```
+
+## Example Dashboard
+ 
+![grafana dashboard example](images/grafana.png)
