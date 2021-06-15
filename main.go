@@ -51,11 +51,19 @@ func updatePresearchMetric(metric string, c *gabs.Container, n string, g *promet
 	g.WithLabelValues(n).Set(childResult(metric, c))
 }
 
+func booltofloat64(inputbool bool) float64 {
+	boolvar := float64(0)
+	if inputbool {
+		boolvar = 1
+	}
+	return boolvar
+}
+
 func childProcessor(children []*gabs.Container, node string) {
 	c := children[0]
 
-	currentlyConnected, _ := c.S("status", "connected").Data().(float64)
-	CurrentlyConnected.WithLabelValues(node).Set(currentlyConnected)
+	currentlyConnected, _ := c.S("status", "connected").Data().(bool)
+	CurrentlyConnected.WithLabelValues(node).Set(booltofloat64(currentlyConnected))
 
 	disconnections, _ := c.S("period", "disconnections", "num_disconnections").Data().(float64)
 	NumDisconnections.WithLabelValues(node).Set(disconnections)
