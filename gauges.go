@@ -106,4 +106,12 @@ var (
 		},
 		[]string{"nodename"},
 	)
+
+	CurrentlyConnected = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "currently_connected",
+			Help: "A bool value for connection state of the node",
+		},
+		[]string{"nodename"},
+	)
 )

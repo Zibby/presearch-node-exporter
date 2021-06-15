@@ -40,6 +40,7 @@ func init() {
 	reg.MustRegister(AverageReliabilityScore)
 	reg.MustRegister(AverageUtilizationPercent)
 	reg.MustRegister(TotalPreEarned)
+	reg.MustRegister(CurrentlyConnected)
 }
 
 func childResult(metric string, c *gabs.Container) float64 {
@@ -52,6 +53,9 @@ func updatePresearchMetric(metric string, c *gabs.Container, n string, g *promet
 
 func childProcessor(children []*gabs.Container, node string) {
 	c := children[0]
+
+	currentlyConnected, _ := c.S("status", "connected").Data().(float64)
+	CurrentlyConnected.WithLabelValues(node).Set(currentlyConnected)
 
 	disconnections, _ := c.S("period", "disconnections", "num_disconnections").Data().(float64)
 	NumDisconnections.WithLabelValues(node).Set(disconnections)
