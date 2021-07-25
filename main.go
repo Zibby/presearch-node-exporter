@@ -93,8 +93,8 @@ func childProcessor(children []*gabs.Container, node string) {
 	dimensions := prometheus.Labels{}
 	dimensions["nodename"] = node
 	dimensions["total_pre_earned"] = fmt.Sprintf("%f", childResult("total_pre_earned", c))
-	dimensions["avg_uptime_score"] = fmt.Sprintf("%f", childResult("total_pre_earned", c))
-	dimensions["total_requests"] = fmt.Sprintf("%f", childResult("total_pre_earned", c))
+	dimensions["avg_uptime_score"] = fmt.Sprintf("%f", childResult("avg_uptime_score", c))
+	dimensions["total_requests"] = fmt.Sprintf("%f", childResult("total_requests", c))
 	updatePresearchTable(dimensions)
 }
 
