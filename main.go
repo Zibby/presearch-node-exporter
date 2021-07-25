@@ -18,29 +18,35 @@ import (
 var apiKey string
 var reg = prometheus.NewRegistry()
 var client = &http.Client{Timeout: 10 * time.Second}
+var metricsList = [14]*prometheus.GaugeVec{
+	NumDisconnections,
+	TotalUptimeSeconds,
+	TotalUptimePercentage,
+	AverageUptimeScore,
+	AverageLatencyMs,
+	AverageLatencyScore,
+	TotalRequests,
+	AverageSuccessRate,
+	AverageSuccessRateScore,
+	AverageReliabilityScore,
+	AverageUtilizationPercent,
+	TotalPreEarned,
+	CurrentlyConnected,
+	InfoTable,
+}
 
 func initLog() {
 	log.SetOutput(os.Stdout)
 	log.SetFormatter(&log.JSONFormatter{})
 	log.Info("logger initialised")
-	apiKey = os.Args[2]
 }
 
 func init() {
 	initLog()
-	reg.MustRegister(NumDisconnections)
-	reg.MustRegister(TotalUptimeSeconds)
-	reg.MustRegister(TotalUptimePercentage)
-	reg.MustRegister(AverageUptimeScore)
-	reg.MustRegister(AverageLatencyMs)
-	reg.MustRegister(AverageLatencyScore)
-	reg.MustRegister(TotalRequests)
-	reg.MustRegister(AverageSuccessRate)
-	reg.MustRegister(AverageSuccessRateScore)
-	reg.MustRegister(AverageReliabilityScore)
-	reg.MustRegister(AverageUtilizationPercent)
-	reg.MustRegister(TotalPreEarned)
-	reg.MustRegister(CurrentlyConnected)
+	for _, metric := range metricsList {
+		reg.MustRegister(metric)
+	}
+	apiKey = os.Args[2]
 }
 
 func childResult(metric string, c *gabs.Container) float64 {
@@ -49,6 +55,10 @@ func childResult(metric string, c *gabs.Container) float64 {
 
 func updatePresearchMetric(metric string, c *gabs.Container, n string, g *prometheus.GaugeVec) {
 	g.WithLabelValues(n).Set(childResult(metric, c))
+}
+
+func updatePresearchTable(dimensions prometheus.Labels) {
+	InfoTable.With(dimensions).Set(1)
 }
 
 func booltofloat64(inputbool bool) float64 {
@@ -80,6 +90,12 @@ func childProcessor(children []*gabs.Container, node string) {
 	updatePresearchMetric("avg_utilization_percent", c, node, AverageUtilizationPercent)
 	updatePresearchMetric("avg_staked_capacity_percent", c, node, AverageStakedCapacityPercent)
 	updatePresearchMetric("total_pre_earned", c, node, TotalPreEarned)
+	dimensions := prometheus.Labels{}
+	dimensions["nodename"] = node
+	dimensions["total_pre_earned"] = fmt.Sprintf("%f", childResult("total_pre_earned", c))
+	dimensions["avg_uptime_score"] = fmt.Sprintf("%f", childResult("total_pre_earned", c))
+	dimensions["total_requests"] = fmt.Sprintf("%f", childResult("total_pre_earned", c))
+	updatePresearchTable(dimensions)
 }
 
 func checkNodeName(children []*gabs.Container) string {
@@ -109,6 +125,7 @@ func presearchStatsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthHander(w http.ResponseWriter, r *http.Request) {
+	_ = r
 	fmt.Fprintln(w, "Health Ok!")
 }
 

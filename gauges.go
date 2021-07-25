@@ -114,4 +114,11 @@ var (
 		},
 		[]string{"nodename"},
 	)
+	InfoTable = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "preseach_info",
+			Help: "Value is always 1 gives data for tables",
+		},
+		[]string{"nodename", "total_pre_earned", "avg_uptime_score", "total_requests"},
+	)
 )
