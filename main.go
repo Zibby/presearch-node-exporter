@@ -104,7 +104,7 @@ func checkNodeName(children []*gabs.Container) string {
 
 func presearchStatsHandler(w http.ResponseWriter, r *http.Request) {
 	nodepublickey := r.FormValue("node")
-	resp, err := client.Get("https://nodes.presearch.org/api/nodes/status/" + apiKey + "?stats=true&start_date=2001-01-01-00%3A00&nodes=" + nodepublickey)
+	resp, err := client.Get("https://nodes.presearch.org/api/nodes/status/" + apiKey + "?stats=true&nodes=" + nodepublickey)
 	if err != nil {
 		log.Error("Failed to connect to api")
 	}
